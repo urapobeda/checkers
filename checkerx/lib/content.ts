@@ -31,17 +31,81 @@ export const playModes = [
 ];
 
 export const lessons = [
-  { title: "Forced captures", level: "Starter", xp: 20, progress: 80 },
-  { title: "Multi-jump vision", level: "Tactics", xp: 30, progress: 45 },
-  { title: "Race to king row", level: "Strategy", xp: 35, progress: 20 },
-  { title: "King endgames", level: "Advanced", xp: 45, progress: 0 },
+  {
+    slug: "forced-captures",
+    title: "Forced captures",
+    level: "Starter",
+    xp: 20,
+    progress: 0,
+    question: "What should you check before every quiet move?",
+    answer: "All available captures",
+    coach: "Most beginner losses come from missing mandatory jumps. Scan both diagonals first, then move.",
+  },
+  {
+    slug: "multi-jump-vision",
+    title: "Multi-jump vision",
+    level: "Tactics",
+    xp: 30,
+    progress: 0,
+    question: "After the first capture, what is the next habit?",
+    answer: "Look for another jump from the landing square",
+    coach: "A capture is not finished until the piece has no further jump. CheckerX rewards full chains.",
+  },
+  {
+    slug: "race-to-king-row",
+    title: "Race to king row",
+    level: "Strategy",
+    xp: 35,
+    progress: 0,
+    question: "Why is an open diagonal to the back row dangerous?",
+    answer: "It can create a king",
+    coach: "When you trade, check whether the opponent gets a clean route to promotion.",
+  },
+  {
+    slug: "king-endgames",
+    title: "King endgames",
+    level: "Advanced",
+    xp: 45,
+    progress: 0,
+    question: "What makes kings stronger than normal pieces?",
+    answer: "They can move and capture backward",
+    coach: "Use kings to control long diagonals and force the opponent into bad trades.",
+  },
 ];
 
 export const tips = [
-  { level: "Beginner", title: "See all legal captures first", tag: "Rules", duration: "6 min" },
-  { level: "Club", title: "Build double-jump traps", tag: "Tactics", duration: "9 min" },
-  { level: "Advanced", title: "Trade into king races", tag: "Strategy", duration: "12 min" },
-  { level: "Pro", title: "Calculate forcing chains", tag: "Calculation", duration: "15 min" },
+  {
+    level: "Beginner",
+    title: "See all legal captures first",
+    tag: "Rules",
+    duration: "6-10 min",
+    query: "checkers beginner strategy mandatory captures",
+    advice: "Pause before every move and name each jump out loud. This fixes most rule-level mistakes.",
+  },
+  {
+    level: "Club",
+    title: "Build double-jump traps",
+    tag: "Tactics",
+    duration: "8-12 min",
+    query: "checkers double jump tactics lesson",
+    advice: "Look one landing square ahead. Good traps invite a capture that leaves the next jump open.",
+  },
+  {
+    level: "Advanced",
+    title: "Trade into king races",
+    tag: "Strategy",
+    duration: "10-15 min",
+    query: "draughts checkers king race endgame strategy",
+    advice: "Do not trade just to simplify. Trade when your remaining piece promotes faster.",
+  },
+  {
+    level: "Pro",
+    title: "Calculate forcing chains",
+    tag: "Calculation",
+    duration: "15+ min",
+    query: "checkers advanced tactics forcing moves",
+    advice: "Write down candidate captures first, then compare final material and king-row access.",
+  },
 ];
 
 export const leaderboard = [

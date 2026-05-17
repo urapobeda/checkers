@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CheckerX
 
-## Getting Started
+CheckerX is a modern web platform for checkers training. It is not just an 8x8 board: the product loop is play, save, review, learn, and climb the city leaderboard.
 
-First, run the development server:
+## Who It Is For
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+CheckerX is built for beginners and club players who want to improve tactical thinking through short games, forced-capture habits, and simple coach feedback.
+
+## What Is Implemented
+
+- Interactive checkers board with legal diagonal moves.
+- Mandatory captures, multi-jumps, kings, winner detection, and move history.
+- Training bot with Beginner, Club, and Elite levels.
+- Supabase auth with player profile, city, XP, rating, coach score, and Elite status.
+- Saved games in Supabase with XP and rating updates.
+- AI Coach-style review of the latest saved game.
+- Learning path with quiz lessons and Supabase lesson progress.
+- City leaderboard powered by Supabase profiles.
+- Pro Tips library with YouTube searches by skill level.
+- Elite Demo monetization flow without real payment collection.
+- Responsive layout for desktop and mobile.
+
+## Why It Is Valuable
+
+Most simple checkers sites stop at moving pieces. CheckerX turns each match into training: players get XP, save games, review mistakes, follow lessons, and compare progress by city. This creates retention and gives the prototype startup potential.
+
+## Tech Stack
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth and Database
+- Vercel-ready deployment
+
+## Environment Variables
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Use the same variables in Vercel project settings.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run Locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Open `http://localhost:3000`.
 
-To learn more about Next.js, take a look at the following resources:
+## Main Routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/` - product home
+- `/play` - real checkers board and bot
+- `/learn` - lessons with XP
+- `/coach` - saved game review
+- `/tips` - pro video advice
+- `/rankings` - city leaderboard
+- `/pro` - Elite Demo
+- `/account` - auth and profile

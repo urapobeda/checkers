@@ -1,16 +1,97 @@
+"use client";
+
 import Link from "next/link";
-import { Brain, Crown, GraduationCap, Home, LogIn, Play, RadioTower, Search, Sparkles, Trophy, UserPlus, Video } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { Brain, Crown, GraduationCap, Home, LogIn, Play, RadioTower, Sparkles, Trophy, UserPlus, UserRound, Video } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { loadMyProfile } from "@/lib/supabase/checkerx-data";
+import { useI18n, type Language } from "./LanguageProvider";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/play", label: "Play", icon: Play },
-  { href: "/learn", label: "Learn", icon: GraduationCap },
-  { href: "/coach", label: "Coach", icon: Brain },
-  { href: "/tips", label: "Pro Tips", icon: Video },
-  { href: "/rankings", label: "Rankings", icon: Trophy },
+  { href: "/", labelKey: "nav.home", icon: Home },
+  { href: "/play", labelKey: "nav.play", icon: Play },
+  { href: "/learn", labelKey: "nav.learn", icon: GraduationCap },
+  { href: "/coach", labelKey: "nav.coach", icon: Brain },
+  { href: "/tips", labelKey: "nav.tips", icon: Video },
+  { href: "/rankings", labelKey: "nav.rankings", icon: Trophy },
+  { href: "/account", labelKey: "nav.account", icon: UserRound },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { language, setLanguage, t } = useI18n();
+  const [accountLabel, setAccountLabel] = useState(t("shell.signIn"));
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    function applyCachedAccount() {
+      const cachedLabel = window.localStorage.getItem("checkerx-account-label");
+      if (cachedLabel) {
+        setSignedIn(true);
+        setAccountLabel(cachedLabel);
+      } else {
+        setSignedIn(false);
+        setAccountLabel(t("shell.signIn"));
+      }
+    }
+
+    applyCachedAccount();
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      return;
+    }
+
+    let active = true;
+
+    async function syncAccountLabel(user: User | null) {
+      if (!active) {
+        return;
+      }
+
+      if (!user) {
+        window.localStorage.removeItem("checkerx-account-label");
+        setSignedIn(false);
+        setAccountLabel(t("shell.signIn"));
+        return;
+      }
+
+      setSignedIn(true);
+      try {
+        const profile = await loadMyProfile();
+        if (active) {
+          const label = profile?.username || user.email || "Account";
+          window.localStorage.setItem("checkerx-account-label", label);
+          setAccountLabel(label);
+        }
+      } catch {
+        if (active) {
+          const label = user.email || "Account";
+          window.localStorage.setItem("checkerx-account-label", label);
+          setAccountLabel(label);
+        }
+      }
+    }
+
+    supabase.auth.getUser().then(({ data }) => {
+      void syncAccountLabel(data.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncAccountLabel(session?.user ?? null);
+    });
+
+    window.addEventListener("checkerx-account-changed", applyCachedAccount);
+
+    return () => {
+      active = false;
+      window.removeEventListener("checkerx-account-changed", applyCachedAccount);
+      subscription.unsubscribe();
+    };
+  }, [t]);
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--background)] text-[var(--foreground)]">
       <div className="pointer-events-none fixed inset-0 -z-10 board-mesh opacity-80" />
@@ -22,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </span>
           <span className="min-w-0">
             <span className="block text-lg font-black leading-5 text-white">CheckerX</span>
-            <span className="block truncate text-[0.65rem] font-semibold text-stone-400">checkers arena</span>
+            <span className="block truncate text-[0.65rem] font-semibold text-stone-400">{t("shell.tagline")}</span>
           </span>
         </Link>
 
@@ -32,28 +113,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <Link key={item.href} href={item.href} className="flex min-h-11 items-center gap-3 rounded-md px-2 text-sm font-black text-stone-300 transition hover:bg-white/8 hover:text-white">
                 <Icon className="h-5 w-5 text-[var(--amber)]" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
           <Link href="/pro" className="mt-2 flex min-h-11 items-center gap-3 rounded-md bg-[linear-gradient(180deg,var(--amber),var(--cyan))] px-2 text-sm font-black text-[#211f1b] transition hover:brightness-110">
             <Crown className="h-5 w-5" />
-            Elite user
+            {t("shell.elite")}
           </Link>
         </nav>
 
         <div className="mt-auto grid gap-2">
-          <Link href="/play" className="flex min-h-10 items-center gap-2 rounded-md border border-white/10 bg-black/18 px-2 text-xs font-bold text-stone-300">
-            <Search className="h-4 w-4 text-stone-400" />
-            Search
-          </Link>
+          <LanguageToggle language={language} setLanguage={setLanguage} />
           <Link href="/pro" className="flex min-h-10 items-center justify-center gap-2 rounded-md bg-[linear-gradient(180deg,#f1c869,#c58d34)] px-2 text-xs font-black text-[#211f1b]">
             <UserPlus className="h-4 w-4" />
-            Become Elite
+            {t("shell.becomeElite")}
           </Link>
-          <Link href="/play" className="flex min-h-10 items-center justify-center gap-2 rounded-md bg-white/8 px-2 text-xs font-black text-white">
-            <LogIn className="h-4 w-4 text-[var(--amber)]" />
-            Sign in
+          <Link href="/account" className="flex min-h-10 items-center justify-center gap-2 rounded-md bg-white/8 px-2 text-xs font-black text-white">
+            {signedIn ? <UserRound className="h-4 w-4 text-[var(--amber)]" /> : <LogIn className="h-4 w-4 text-[var(--amber)]" />}
+            <span className="truncate">{accountLabel}</span>
           </Link>
         </div>
       </aside>
@@ -66,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <span className="min-w-0">
               <span className="block font-black tracking-tight text-white">CheckerX</span>
-              <span className="hidden text-xs font-medium text-stone-400 sm:block">Tactical checkers arena</span>
+              <span className="hidden text-xs font-medium text-stone-400 sm:block">{t("shell.tagline")}</span>
             </span>
           </Link>
 
@@ -76,7 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               return (
                 <Link key={item.href} href={item.href} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-stone-300 transition hover:bg-white/7 hover:text-white">
                   <Icon className="h-4 w-4" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
@@ -85,12 +163,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <Link href="/pro" className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[var(--amber)] px-4 text-sm font-bold text-[#211f1b] transition hover:brightness-110">
               <Crown className="h-4 w-4" />
-              Elite
+              {t("shell.elite")}
             </Link>
-            <Link href="/play" className="hidden min-h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/6 px-4 text-sm font-bold text-white transition hover:bg-white/10 sm:inline-flex">
+            <Link href="/account" className="hidden min-h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/6 px-4 text-sm font-bold text-white transition hover:bg-white/10 sm:inline-flex">
               <Sparkles className="h-4 w-4 text-[var(--cyan)]" />
-              Start
+              {t("shell.account")}
             </Link>
+            <LanguageToggle language={language} setLanguage={setLanguage} compact />
           </div>
         </div>
       </header>
@@ -104,12 +183,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             return (
               <Link key={item.href} href={item.href} className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[0.68rem] font-semibold text-stone-300 transition hover:bg-white/8 hover:text-white">
                 <Icon className="h-4 w-4" />
-                {item.label.replace("Pro Tips", "Tips")}
+                {t(item.labelKey).replace("Pro ", "")}
               </Link>
             );
           })}
         </div>
       </nav>
+    </div>
+  );
+}
+
+function LanguageToggle({ language, setLanguage, compact = false }: { language: Language; setLanguage: (language: Language) => void; compact?: boolean }) {
+  return (
+    <div className={`grid grid-cols-2 rounded-md border border-white/10 bg-black/18 p-1 ${compact ? "w-24" : ""}`}>
+      {(["ru", "en"] as const).map((item) => (
+        <button
+          key={item}
+          type="button"
+          onClick={() => setLanguage(item)}
+          className={`min-h-9 rounded text-xs font-black transition ${language === item ? "bg-[var(--amber)] text-[#211f1b]" : "text-stone-300 hover:bg-white/8"}`}
+        >
+          {item.toUpperCase()}
+        </button>
+      ))}
     </div>
   );
 }

@@ -1,13 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight } from "lucide-react";
+import { useI18n } from "./LanguageProvider";
 
-export function PageHeader({ kicker, title, body }: { kicker: string; title: string; body: string }) {
+export function PageHeader({ kicker, title, body, copyId }: { kicker?: string; title?: string; body?: string; copyId?: string }) {
+  const { t } = useI18n();
+  const finalKicker = copyId ? t(`${copyId}.kicker`) : kicker;
+  const finalTitle = copyId ? t(`${copyId}.title`) : title;
+  const finalBody = copyId ? t(`${copyId}.body`) : body;
+
   return (
     <section className="mx-auto w-full max-w-7xl px-4 pb-6 pt-10 md:px-8 md:pt-14">
-      <p className="section-label">{kicker}</p>
-      <h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">{title}</h1>
-      <p className="mt-5 max-w-2xl text-base leading-7 text-stone-300 md:text-lg">{body}</p>
+      <p className="section-label">{finalKicker}</p>
+      <h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight tracking-tight text-white md:text-6xl">{finalTitle}</h1>
+      <p className="mt-5 max-w-2xl text-base leading-7 text-stone-300 md:text-lg">{finalBody}</p>
     </section>
   );
 }
