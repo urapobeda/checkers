@@ -1,9 +1,9 @@
 import { Brain, Crown, Flame, Focus, Gauge, Medal, MoveDiagonal, RadioTower, ShieldCheck, Sparkles, Trophy, Video } from "lucide-react";
 
 export const quickStats = [
-  { label: "Today XP", value: "40 / 80", tone: "cyan" },
-  { label: "Current streak", value: "1 day", tone: "amber" },
-  { label: "City rank", value: "#12 Almaty", tone: "cyan" },
+  { label: "Today XP", value: "0 / 80", tone: "cyan" },
+  { label: "Current streak", value: "0 days", tone: "amber" },
+  { label: "City rank", value: "Unranked", tone: "cyan" },
 ];
 
 export const productLoops = [
@@ -54,7 +54,7 @@ export const leaderboard = [
 export const proBenefits = [
   { icon: Gauge, title: "Deep review", body: "Longer coach explanations and move-by-move risk labels." },
   { icon: Focus, title: "Mistake drills", body: "Every missed capture becomes a repeatable puzzle card." },
-  { icon: Trophy, title: "City badge", body: "Founder Pro badge appears in rankings and player profile." },
+  { icon: Trophy, title: "Elite user badge", body: "Elite user status appears in rankings and the player profile." },
   { icon: Crown, title: "Custom skins", body: "Unlock premium checker pieces and board themes." },
 ];
 

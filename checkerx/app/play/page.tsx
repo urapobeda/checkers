@@ -22,9 +22,9 @@ export default function PlayPage() {
                 </span>
                 <span>
                   <span className="block text-xl font-black text-white">{mode.title}</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-300">{mode.body}</span>
+                  <span className="mt-1 block text-sm leading-6 text-stone-300">{mode.body}</span>
                 </span>
-                <span className="rounded-lg border border-white/10 bg-white/6 px-4 py-2 text-sm font-bold text-slate-200">{mode.action}</span>
+                <span className="rounded-lg border border-white/10 bg-white/6 px-4 py-2 text-sm font-bold text-stone-200">{mode.action}</span>
               </Surface>
             );
           })}
@@ -32,7 +32,7 @@ export default function PlayPage() {
         <Surface className="p-4 md:p-6">
           <p className="section-label">Board preview</p>
           <h2 className="mt-3 text-3xl font-black text-white">Rules engine comes next.</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-300">
+          <p className="mt-3 text-sm leading-6 text-stone-300">
             Next we will add legal moves, mandatory captures, multi-jumps, kings, victory detection, move history, and bot replies.
           </p>
           <div className="mt-6">

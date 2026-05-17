@@ -25,7 +25,7 @@ export default function CoachPage() {
           <Surface>
             <p className="section-label">Coach verdict</p>
             <h2 className="mt-3 text-3xl font-black text-white">Accuracy 74%</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-300">
+            <p className="mt-3 text-sm leading-6 text-stone-300">
               Your structure was playable, but the biggest swing came from missing a capture chain that also opened a king path.
             </p>
           </Surface>
@@ -38,7 +38,7 @@ export default function CoachPage() {
                 </span>
                 <span>
                   <span className="block text-xl font-black text-white">{card.title}</span>
-                  <span className="mt-1 block text-sm leading-6 text-slate-300">{card.body}</span>
+                  <span className="mt-1 block text-sm leading-6 text-stone-300">{card.body}</span>
                 </span>
               </Surface>
             );
