@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="CheckerX - современная статическая веб-игра в шашки с красивой доской, обучающими советами и локальной игрой."
+    />
+    <title>CheckerX - Checkers Arena</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="Навигация CheckerX">
+        <a class="brand" href="./index.html" aria-label="CheckerX home">
+          <span class="brand-mark">CX</span>
+          <span>
+            <strong>CheckerX</strong>
+            <small>checkers arena</small>
+          </span>
+        </a>
+
+        <nav class="nav-links">
+          <a href="#play">Играть</a>
+          <a href="#coach">Тренер</a>
+          <a href="#tips">Pro советы</a>
+          <a href="#levels">Уровни</a>
+        </nav>
+
+        <div class="sidebar-card">
+          <span>Демо для Vercel</span>
+          <strong>Static site</strong>
+          <small>HTML + CSS + JS, без backend</small>
+        </div>
+      </aside>
+
+      <section class="content">
+        <header class="hero">
+          <div class="hero-copy">
+            <p class="kicker">CheckerX Arena</p>
+            <h1>Играйте в шашки онлайн и тренируйте тактическое мышление.</h1>
+            <p>
+              Минимальная рабочая версия для деплоя: доска 8x8, шашки двух цветов,
+              ходы по диагонали, подсказки клеток и аккуратный адаптивный дизайн.
+            </p>
+            <div class="hero-actions">
+              <a class="primary-button" href="#play">Начать партию</a>
+              <a class="secondary-button" href="#tips">Открыть советы</a>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <div class="metric">
+              <span>Сегодня XP</span>
+              <strong id="xp-counter">0</strong>
+            </div>
+            <div class="metric">
+              <span>Режим</span>
+              <strong>Local</strong>
+            </div>
+            <div class="metric">
+              <span>Статус</span>
+              <strong>Ready</strong>
+            </div>
+          </div>
+        </header>
+
+        <section id="play" class="game-layout">
+          <div class="board-wrap">
+            <div class="board-header">
+              <div>
+                <p class="kicker">Live board</p>
+                <h2 id="turn-label">Ход: светлые</h2>
+              </div>
+              <button id="reset-game" class="icon-button" type="button">Сбросить</button>
+            </div>
+            <div id="board" class="board" aria-label="Доска для шашек"></div>
+          </div>
+
+          <aside class="game-panel">
+            <article class="panel-card">
+              <p class="kicker">Правила демо</p>
+              <h3>Ход по диагонали</h3>
+              <p>
+                Выберите свою шашку, затем кликните по подсвеченной диагональной
+                клетке. Простые шашки ходят вперед, дамки в этой static-версии не
+                используются.
+              </p>
+            </article>
+
+            <article class="panel-card" id="coach">
+              <p class="kicker">Coach hint</p>
+              <h3 id="coach-title">Начните с центра</h3>
+              <p id="coach-text">
+                Контроль центральных диагоналей помогает создавать будущие взятия.
+              </p>
+            </article>
+
+            <article class="panel-card">
+              <p class="kicker">Лента ходов</p>
+              <ol id="move-log" class="move-log"></ol>
+            </article>
+          </aside>
+        </section>
+
+        <section id="tips" class="tips-section">
+          <div class="section-heading">
+            <p class="kicker">Pro советы</p>
+            <h2>Видео-темы по уровню игрока</h2>
+          </div>
+
+          <div class="tips-grid">
+            <a
+              class="tip-card"
+              href="https://www.youtube.com/results?search_query=checkers+beginner+strategy+mandatory+captures"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>Новичок</span>
+              <strong>Обязательные взятия</strong>
+              <p>Учитесь перед каждым ходом проверять все прыжки.</p>
+            </a>
+            <a
+              class="tip-card"
+              href="https://www.youtube.com/results?search_query=checkers+double+jump+tactics+lesson"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>Средний</span>
+              <strong>Двойные взятия</strong>
+              <p>Стройте ловушки, где первая жертва открывает вторую.</p>
+            </a>
+            <a
+              class="tip-card"
+              href="https://www.youtube.com/results?search_query=draughts+checkers+king+endgame+strategy"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>Продвинутый</span>
+              <strong>Гонка в дамки</strong>
+              <p>Меняйтесь фигурами только если ваш проход быстрее.</p>
+            </a>
+          </div>
+        </section>
+
+        <section id="levels" class="levels-section">
+          <div class="level-card">
+            <span>Level</span>
+            <strong>Средний+</strong>
+            <p>Рабочая игра без backend, которую Vercel может отдать как static site.</p>
+          </div>
+          <div class="level-card">
+            <span>Next</span>
+            <strong>AI Coach</strong>
+            <p>Следующий этап: подключить анализ партий и сохранение прогресса.</p>
+          </div>
+          <div class="level-card">
+            <span>Deploy</span>
+            <strong>Vercel Ready</strong>
+            <p>Главная страница лежит в корне, поэтому `/` больше не должен быть 404.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./script.js" defer></script>
+  </body>
+</html>
