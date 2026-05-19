@@ -38,10 +38,12 @@ Create `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Use the same variables in Vercel project settings.
+Use the same variables in Vercel project settings before deploying. The app also supports
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` as a fallback if your Supabase project uses the newer
+publishable key name.
 
 ## Run Locally
 
