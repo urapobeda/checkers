@@ -11,6 +11,7 @@ CheckerX is built for beginners and club players who want to improve tactical th
 - Interactive checkers board with legal diagonal moves.
 - Mandatory captures, multi-jumps, kings, winner detection, and move history.
 - Training bot with Beginner, Club, and Elite levels.
+- Friend rooms with invite codes and Supabase Realtime board sync.
 - Supabase auth with player profile, city, XP, rating, coach score, and Elite status.
 - Saved games in Supabase with XP and rating updates.
 - AI Coach-style review of the latest saved game.
@@ -44,6 +45,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 Use the same variables in Vercel project settings before deploying. The app also supports
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` as a fallback if your Supabase project uses the newer
 publishable key name.
+
+## Supabase Multiplayer Table
+
+Run `supabase_multiplayer_rooms.sql` in the Supabase SQL editor to enable friend rooms. It creates the `rooms` table, public demo policies for invite-code play, and adds the table to Supabase Realtime.
 
 ## Run Locally
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Bot, Brain, Crown, RefreshCw, RotateCcw, Save, ShieldCheck, UserRound, Zap } from "lucide-react";
+import { Bot, Brain, Copy, Crown, Link2, RefreshCw, RotateCcw, Save, ShieldCheck, UserRound, Users, Zap } from "lucide-react";
 import {
   applyMove,
   chooseBotMove,
@@ -17,11 +17,11 @@ import {
   type Player,
   type Position,
 } from "@/lib/checkers";
-import { saveGameResult } from "@/lib/supabase/checkerx-data";
-import type { Json } from "@/lib/supabase/types";
+import { createRoom, joinRoom, saveGameResult, subscribeToRoom, updateRoomState } from "@/lib/supabase/checkerx-data";
+import type { Json, RoomRecord } from "@/lib/supabase/types";
 import { useI18n } from "./LanguageProvider";
 
-type GameMode = "bot" | "local";
+type GameMode = "bot" | "local" | "room";
 
 type HistoryItem = {
   move: Move;
@@ -47,6 +47,15 @@ export function CheckersGame() {
   const [botThinking, setBotThinking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState(t("game.saveDefault"));
+  const [room, setRoom] = useState<RoomRecord | null>(null);
+  const [roomCodeInput, setRoomCodeInput] = useState(() => readInitialRoomCode());
+  const [roomMessage, setRoomMessage] = useState(() => {
+    const initialRoomCode = readInitialRoomCode();
+    return initialRoomCode ? t("room.linkDetected", { code: initialRoomCode }) : t("room.default");
+  });
+  const [roomLoading, setRoomLoading] = useState(false);
+  const [playerSeat, setPlayerSeat] = useState<Player | null>(null);
+  const [shareLink, setShareLink] = useState("");
 
   const legalMoves = useMemo(() => (winner ? [] : getLegalMoves(board, currentPlayer)), [board, currentPlayer, winner]);
   const selectedMoves = useMemo(
@@ -55,6 +64,21 @@ export function CheckersGame() {
   );
   const mustCapture = legalMoves.some((move) => move.captures.length > 0);
   const pieceStats = useMemo(() => getPieceStats(board), [board]);
+
+  useEffect(() => {
+    if (!room?.id) {
+      return;
+    }
+
+    const unsubscribe = subscribeToRoom(room.id, (nextRoom) => {
+      applyRoomState(nextRoom);
+      setRoomMessage(nextRoom.status === "active" ? t("room.synced") : t("room.waiting", { code: nextRoom.code }));
+    });
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, [room?.id, t]);
 
   useEffect(() => {
     if (mode !== "bot" || currentPlayer !== "dark" || winner) {
@@ -85,7 +109,7 @@ export function CheckersGame() {
     };
   }, [board, botLevel, currentPlayer, mode, winner]);
 
-  function resetGame(nextMode = mode) {
+  function resetGame(nextMode: GameMode = mode) {
     setBoard(createInitialBoard());
     setCurrentPlayer("light");
     setSelected(null);
@@ -93,19 +117,60 @@ export function CheckersGame() {
     setHistory([]);
     setMode(nextMode);
     setBotThinking(false);
+    if (nextMode !== "room") {
+      setRoom(null);
+      setPlayerSeat(null);
+      setShareLink("");
+      window.history.replaceState(null, "", "/play/");
+    }
     setSaveMessage(t("game.saveDefault"));
   }
 
-  function commitHumanMove(move: Move) {
+  function applyRoomState(nextRoom: RoomRecord) {
+    const nextBoard = readRoomBoard(nextRoom);
+    const nextTurn = readRoomTurn(nextRoom);
+    setRoom(nextRoom);
+    setBoard(nextBoard);
+    setCurrentPlayer(nextTurn);
+    setHistory(readRoomHistory(nextRoom));
+    setWinner(getWinner(nextBoard, nextTurn));
+    setSelected(null);
+    setBotThinking(false);
+  }
+
+  async function commitHumanMove(move: Move) {
     const nextBoard = applyMove(board, move);
     const nextPlayer = otherPlayer(currentPlayer);
     const nextWinner = getWinner(nextBoard, nextPlayer);
+    const nextHistory = [...history, { move, player: currentPlayer, source: "human" as const }];
+
     setBoard(nextBoard);
     setCurrentPlayer(nextPlayer);
     setWinner(nextWinner);
     setSelected(null);
     setBotThinking(mode === "bot" && nextPlayer === "dark" && !nextWinner);
-    setHistory((items) => [...items, { move, player: currentPlayer, source: "human" }]);
+    setHistory(nextHistory);
+
+    if (mode === "room" && room) {
+      try {
+        setRoomMessage(t("room.syncing"));
+        const result = await updateRoomState(room.id, {
+          board: nextBoard,
+          currentTurn: nextPlayer,
+          moves: nextHistory as unknown as Json,
+          status: nextWinner ? "finished" : "active",
+        });
+
+        if (result.ok) {
+          applyRoomState(result.room);
+          setRoomMessage(nextWinner ? t("room.finished") : t("room.synced"));
+        } else {
+          setRoomMessage(t("room.notConfigured"));
+        }
+      } catch (error) {
+        setRoomMessage(error instanceof Error ? error.message : t("room.syncError"));
+      }
+    }
   }
 
   function handleSquareClick(position: Position) {
@@ -113,9 +178,13 @@ export function CheckersGame() {
       return;
     }
 
+    if (mode === "room" && (!room || room.status !== "active" || playerSeat !== currentPlayer)) {
+      return;
+    }
+
     const destinationMove = selectedMoves.find((move) => positionsEqual(move.to, position));
     if (destinationMove) {
-      commitHumanMove(destinationMove);
+      void commitHumanMove(destinationMove);
       return;
     }
 
@@ -128,6 +197,97 @@ export function CheckersGame() {
     }
 
     setSelected(null);
+  }
+
+  async function handleCreateRoom() {
+    setRoomLoading(true);
+    setRoomMessage(t("room.creating"));
+
+    try {
+      const result = await createRoom();
+
+      if (!result.ok) {
+        setRoomMessage(t("room.notConfigured"));
+        return;
+      }
+
+      setMode("room");
+      setPlayerSeat("light");
+      applyRoomState(result.room);
+      setRoomCodeInput(result.room.code);
+      const nextShareLink = `${window.location.origin}/play/?room=${result.room.code}`;
+      setShareLink(nextShareLink);
+      window.history.replaceState(null, "", `/play/?room=${result.room.code}`);
+      setRoomMessage(t("room.created", { code: result.room.code }));
+    } catch (error) {
+      setRoomMessage(error instanceof Error ? error.message : t("room.createError"));
+    } finally {
+      setRoomLoading(false);
+    }
+  }
+
+  async function handleJoinRoom(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRoomLoading(true);
+    setRoomMessage(t("room.joining"));
+
+    try {
+      const result = await joinRoom(roomCodeInput);
+
+      if (!result.ok) {
+        setRoomMessage(t(`room.${result.reason}`));
+        return;
+      }
+
+      setMode("room");
+      setPlayerSeat("dark");
+      applyRoomState(result.room);
+      const nextShareLink = `${window.location.origin}/play/?room=${result.room.code}`;
+      setShareLink(nextShareLink);
+      window.history.replaceState(null, "", `/play/?room=${result.room.code}`);
+      setRoomMessage(t("room.joined", { code: result.room.code }));
+    } catch (error) {
+      setRoomMessage(error instanceof Error ? error.message : t("room.joinError"));
+    } finally {
+      setRoomLoading(false);
+    }
+  }
+
+  async function handleCopyRoom() {
+    if (!room) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareLink || room.code);
+      setRoomMessage(t("room.copied"));
+    } catch {
+      setRoomMessage(t("room.copyManual", { code: room.code }));
+    }
+  }
+
+  async function handleNewGame() {
+    if (mode !== "room" || !room) {
+      resetGame();
+      return;
+    }
+
+    try {
+      const nextBoard = createInitialBoard();
+      const result = await updateRoomState(room.id, {
+        board: nextBoard,
+        currentTurn: "light",
+        moves: [],
+        status: room.status === "active" ? "active" : "waiting",
+      });
+
+      if (result.ok) {
+        applyRoomState(result.room);
+        setRoomMessage(t("room.resetDone"));
+      }
+    } catch (error) {
+      setRoomMessage(error instanceof Error ? error.message : t("room.syncError"));
+    }
   }
 
   async function handleSaveGame() {
@@ -169,11 +329,21 @@ export function CheckersGame() {
   const getPlayerLabel = (player: Player) => (player === "light" ? t("game.white") : t("game.black"));
   const getLevelTitle = (level: BotLevel) => t(`game.level.${level}.title`);
   const getLevelBody = (level: BotLevel) => t(`game.level.${level}.body`);
+  const roomTurnStatus =
+    mode === "room" && room
+      ? room.status === "waiting"
+        ? t("room.waitingStatus", { code: room.code })
+        : playerSeat === currentPlayer
+          ? t("room.yourTurn", { player: getPlayerLabel(currentPlayer) })
+          : t("room.opponentTurn", { player: getPlayerLabel(currentPlayer) })
+      : null;
   const status = winner
     ? t("game.wins", { player: getPlayerLabel(winner) })
-    : botThinking
-      ? t("game.botThinking", { bot: getLevelTitle(botLevel) })
-      : t("game.toMove", { player: getPlayerLabel(currentPlayer) });
+    : roomTurnStatus
+      ? roomTurnStatus
+      : botThinking
+        ? t("game.botThinking", { bot: getLevelTitle(botLevel) })
+        : t("game.toMove", { player: getPlayerLabel(currentPlayer) });
 
   return (
     <section className="grid gap-5 xl:grid-cols-[minmax(520px,0.95fr)_minmax(360px,0.65fr)]">
@@ -200,6 +370,18 @@ export function CheckersGame() {
               <UserRound className="h-4 w-4" />
               {t("game.twoPlayers")}
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("room");
+                setBotThinking(false);
+                setSaveMessage(t("game.saveDefault"));
+              }}
+              className={`inline-flex min-h-10 items-center gap-2 rounded-lg px-4 text-sm font-black transition ${mode === "room" ? "bg-[var(--amber)] text-[#211f1b]" : "border border-white/10 bg-white/6 text-white hover:bg-white/10"}`}
+            >
+              <Users className="h-4 w-4" />
+              {t("room.mode")}
+            </button>
           </div>
         </div>
 
@@ -220,7 +402,7 @@ export function CheckersGame() {
                       key={`${rowIndex}-${colIndex}`}
                       type="button"
                       onClick={() => handleSquareClick(position)}
-                      disabled={!playable || Boolean(winner) || botThinking}
+                      disabled={!playable || Boolean(winner) || botThinking || (mode === "room" && (!room || room.status !== "active" || playerSeat !== currentPlayer))}
                       className={`relative grid aspect-square place-items-center transition ${playable ? "bg-[var(--board-dark)]" : "bg-[var(--board-light)]"} ${playable && !winner ? "hover:brightness-110" : ""}`}
                       aria-label={`Square ${rowIndex}-${colIndex}`}
                     >
@@ -252,6 +434,68 @@ export function CheckersGame() {
       </div>
 
       <aside className="grid gap-4">
+        <div className="surface rounded-xl p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="section-label">{t("room.kicker")}</p>
+              <h2 className="mt-2 text-2xl font-black text-white">{t("room.title")}</h2>
+            </div>
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-[var(--amber-soft)] text-[var(--amber)]">
+              <Link2 className="h-5 w-5" />
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <button
+              type="button"
+              onClick={handleCreateRoom}
+              disabled={roomLoading}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(180deg,var(--amber),var(--cyan))] px-4 text-sm font-black text-[#211f1b] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <Users className="h-4 w-4" />
+              {t("room.create")}
+            </button>
+
+            <form onSubmit={handleJoinRoom} className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <input
+                value={roomCodeInput}
+                onChange={(event) => setRoomCodeInput(normalizeRoomCode(event.target.value))}
+                placeholder={t("room.codePlaceholder")}
+                className="min-h-11 rounded-lg border border-white/10 bg-white/7 px-4 text-sm font-black uppercase tracking-[0.18em] text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-stone-500 focus:border-[var(--amber)]"
+              />
+              <button
+                type="submit"
+                disabled={roomLoading}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/10 bg-white/7 px-4 text-sm font-black text-white transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {t("room.join")}
+              </button>
+            </form>
+
+            {room ? (
+              <div className="rounded-lg border border-[var(--amber)]/25 bg-[var(--amber-soft)] p-4">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--amber)]">{t("room.activeRoom")}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <span className="text-3xl font-black tracking-[0.18em] text-white">{room.code}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyRoom}
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#171511] px-3 text-sm font-black text-white transition hover:bg-black/50"
+                  >
+                    <Copy className="h-4 w-4" />
+                    {t("room.copy")}
+                  </button>
+                </div>
+                <p className="mt-3 text-sm font-semibold leading-6 text-stone-300">
+                  {t("room.youAre", { player: playerSeat ? getPlayerLabel(playerSeat) : t("room.spectator") })}
+                </p>
+              </div>
+            ) : null}
+
+            <p className="rounded-lg border border-white/10 bg-[#171511]/80 p-3 text-xs font-bold leading-5 text-stone-300">{roomMessage}</p>
+          </div>
+        </div>
+
         <div className="surface rounded-xl p-5">
           <p className="section-label">{t("game.trainingBot")}</p>
           <h2 className="mt-2 text-2xl font-black text-white">{t("game.chooseDifficulty")}</h2>
@@ -286,7 +530,7 @@ export function CheckersGame() {
             </div>
             <button
               type="button"
-              onClick={() => resetGame()}
+              onClick={handleNewGame}
               className="grid h-11 w-11 place-items-center rounded-lg border border-white/10 bg-white/6 text-white transition hover:bg-white/10"
               aria-label={t("game.reset")}
             >
@@ -338,7 +582,7 @@ export function CheckersGame() {
             </button>
             <button
               type="button"
-              onClick={() => resetGame()}
+              onClick={handleNewGame}
               className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/10 bg-white/7 px-4 text-sm font-black text-white transition hover:bg-white/12"
             >
               <RefreshCw className="h-4 w-4" />
@@ -374,4 +618,31 @@ function getPieceStats(board: Board) {
     },
     { light: 0, dark: 0 },
   );
+}
+
+function readRoomBoard(room: RoomRecord): Board {
+  return Array.isArray(room.board) ? (room.board as unknown as Board) : createInitialBoard();
+}
+
+function readRoomTurn(room: RoomRecord): Player {
+  return room.current_turn === "dark" ? "dark" : "light";
+}
+
+function readRoomHistory(room: RoomRecord): HistoryItem[] {
+  if (!Array.isArray(room.moves)) {
+    return [];
+  }
+
+  return room.moves.filter((item): item is HistoryItem => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return false;
+    }
+
+    const candidate = item as Partial<HistoryItem>;
+    return Boolean(candidate.move?.notation && (candidate.player === "light" || candidate.player === "dark"));
+  });
+}
+
+function normalizeRoomCode(code: string) {
+  return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 }

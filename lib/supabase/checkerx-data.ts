@@ -1,7 +1,8 @@
 "use client";
 
 import { getSupabaseBrowserClient } from "./client";
-import type { GameRecord, Json, LessonProgress, Profile } from "./types";
+import { createInitialBoard, type Board, type Player } from "../checkers";
+import type { GameRecord, Json, LessonProgress, Profile, RoomRecord } from "./types";
 
 export type MovePayload = {
   notation: string;
@@ -16,6 +17,13 @@ export type SaveGameInput = {
   winner?: string | null;
   moves: MovePayload[];
   finalBoard: Json;
+};
+
+export type RoomStateInput = {
+  board: Board;
+  currentTurn: Player;
+  moves: Json;
+  status?: "waiting" | "active" | "finished";
 };
 
 export async function getCurrentUser() {
@@ -317,6 +325,140 @@ export async function saveGameResult(input: SaveGameInput) {
   return { ok: true as const, xpEarned, ratingDelta };
 }
 
+export async function createRoom(timeControl = "10+0") {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return { ok: false as const, reason: "config" as const };
+  }
+
+  const user = await getCurrentUser();
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const code = makeRoomCode();
+    const { data, error } = await supabase
+      .from("rooms")
+      .insert({
+        code,
+        host_id: user?.id ?? null,
+        status: "waiting",
+        current_turn: "light",
+        board: createInitialBoard() as unknown as Json,
+        moves: [],
+        time_control: timeControl,
+      })
+      .select("*")
+      .single();
+
+    if (!error && data) {
+      return { ok: true as const, room: data };
+    }
+
+    if (error?.code !== "23505") {
+      throw error;
+    }
+  }
+
+  throw new Error("Could not create a unique room code.");
+}
+
+export async function joinRoom(rawCode: string) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return { ok: false as const, reason: "config" as const };
+  }
+
+  const code = normalizeRoomCode(rawCode);
+  if (!code) {
+    return { ok: false as const, reason: "empty" as const };
+  }
+
+  const { data: room, error } = await supabase.from("rooms").select("*").eq("code", code).maybeSingle();
+  if (error) {
+    throw error;
+  }
+
+  if (!room) {
+    return { ok: false as const, reason: "not-found" as const };
+  }
+
+  if (room.status === "finished") {
+    return { ok: false as const, reason: "finished" as const };
+  }
+
+  const user = await getCurrentUser();
+  const { data: nextRoom, error: updateError } = await supabase
+    .from("rooms")
+    .update({
+      guest_id: room.guest_id ?? user?.id ?? null,
+      status: "active",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", room.id)
+    .select("*")
+    .single();
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return { ok: true as const, room: nextRoom };
+}
+
+export async function updateRoomState(roomId: string, input: RoomStateInput) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return { ok: false as const, reason: "config" as const };
+  }
+
+  const { data, error } = await supabase
+    .from("rooms")
+    .update({
+      board: input.board as unknown as Json,
+      current_turn: input.currentTurn,
+      moves: input.moves,
+      status: input.status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", roomId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return { ok: true as const, room: data };
+}
+
+export function subscribeToRoom(roomId: string, onChange: (room: RoomRecord) => void) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const channel = supabase
+    .channel(`checkerx-room-${roomId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "rooms",
+        filter: `id=eq.${roomId}`,
+      },
+      (payload) => {
+        if (payload.new) {
+          onChange(payload.new as RoomRecord);
+        }
+      },
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
 export function serializeGameRecord(record: GameRecord) {
   return {
     ...record,
@@ -337,4 +479,13 @@ function makeInitials(username: string) {
   const parts = username.trim().split(/\s+/).filter(Boolean);
   const initials = parts.length >= 2 ? `${parts[0][0]}${parts[1][0]}` : username.slice(0, 2);
   return initials.toUpperCase() || "CX";
+}
+
+function normalizeRoomCode(code: string) {
+  return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+}
+
+function makeRoomCode() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({ length: 6 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join("");
 }
