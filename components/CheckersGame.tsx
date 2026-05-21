@@ -646,3 +646,11 @@ function readRoomHistory(room: RoomRecord): HistoryItem[] {
 function normalizeRoomCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 }
+
+function readInitialRoomCode() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return normalizeRoomCode(new URLSearchParams(window.location.search).get("room") ?? "");
+}
