@@ -761,7 +761,7 @@ function buildSlot(
     };
   }
 
-  if (activePanel === "bot" || mode === "bot") {
+  if (activePanel === "bot" || (matchStarted && mode === "bot")) {
     return {
       label: t("game.black"),
       title: botName,
