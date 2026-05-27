@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Brain, Crown, GraduationCap, Home, LogIn, Play, RadioTower, Sparkles, Trophy, UserPlus, UserRound, Video } from "lucide-react";
@@ -20,8 +21,10 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { language, setLanguage, t } = useI18n();
+  const pathname = usePathname();
   const [accountLabel, setAccountLabel] = useState(t("shell.signIn"));
   const [signedIn, setSignedIn] = useState(false);
+  const isActiveRoute = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   useEffect(() => {
     function applyCachedAccount() {
@@ -110,9 +113,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="mt-6 grid gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const active = isActiveRoute(item.href);
             return (
-              <Link key={item.href} href={item.href} className="flex min-h-11 items-center gap-3 rounded-md px-2 text-sm font-black text-stone-300 transition hover:bg-white/8 hover:text-white">
-                <Icon className="h-5 w-5 text-[var(--amber)]" />
+              <Link key={item.href} href={item.href} className={`flex min-h-11 items-center gap-3 rounded-md px-2 text-sm font-black transition ${active ? "bg-white/10 text-white shadow-[inset_3px_0_0_var(--amber)]" : "text-stone-300 hover:bg-white/8 hover:text-white"}`}>
+                <Icon className={`h-5 w-5 ${active ? "text-[var(--cyan)]" : "text-[var(--amber)]"}`} />
                 {t(item.labelKey)}
               </Link>
             );
@@ -180,9 +184,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
           {navItems.slice(1, 6).map((item) => {
             const Icon = item.icon;
+            const active = isActiveRoute(item.href);
             return (
-              <Link key={item.href} href={item.href} className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[0.68rem] font-semibold text-stone-300 transition hover:bg-white/8 hover:text-white">
-                <Icon className="h-4 w-4" />
+              <Link key={item.href} href={item.href} className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[0.68rem] font-semibold transition ${active ? "bg-[var(--amber-soft)] text-white" : "text-stone-300 hover:bg-white/8 hover:text-white"}`}>
+                <Icon className={`h-4 w-4 ${active ? "text-[var(--amber)]" : ""}`} />
                 {t(item.labelKey).replace("Pro ", "")}
               </Link>
             );
