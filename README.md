@@ -21,6 +21,12 @@ CheckerX is built for beginners and club players who want to improve tactical th
 - Elite Demo monetization flow without real payment collection.
 - Responsive layout for desktop and mobile.
 
+## Incubator Requirements Map
+
+- Level 2: full checkers rules, local move validation, winner detection, and clean React/Next.js structure.
+- Level 3: bot opponents, saved game history, Supabase auth/profiles, themes through a polished responsive UI, and move hints.
+- Level 4: invite-code multiplayer rooms with Supabase Realtime, coach-style post-game analysis, city leaderboard, Pro Tips by level, and an Elite monetization demo.
+
 ## Why It Is Valuable
 
 Most simple checkers sites stop at moving pieces. CheckerX turns each match into training: players get XP, save games, review mistakes, follow lessons, and compare progress by city. This creates retention and gives the prototype startup potential.
@@ -35,7 +41,7 @@ Most simple checkers sites stop at moving pieces. CheckerX turns each match into
 
 ## Environment Variables
 
-Create `.env.local`:
+Copy `.env.example` to `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
