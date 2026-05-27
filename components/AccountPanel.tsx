@@ -359,8 +359,8 @@ export function AccountPanel() {
             ) : (
               games.map((game) => {
                 const item = serializeGameRecord(game);
-                const modeLabel = game.mode === "local" ? t("account.gameLocal") : t("game.bot");
-                const opponentLabel = game.bot_level ? t(`game.level.${game.bot_level}.title`) : t("account.gameLocal");
+                const modeLabel = getGameModeLabel(game.mode, t);
+                const opponentLabel = game.bot_level ? t(`game.level.${game.bot_level}.title`) : getGameOpponentLabel(game.mode, t);
                 const winnerLabel = game.winner ? (game.winner === "light" ? t("game.white") : t("game.black")) : t("account.gameSaved");
 
                 return (
@@ -426,4 +426,28 @@ function TipsRecommendation({ level }: { level: string }) {
       </a>
     </div>
   );
+}
+
+function getGameModeLabel(mode: string, t: (key: string) => string) {
+  if (mode === "room") {
+    return t("account.gameRoom");
+  }
+
+  if (mode === "local") {
+    return t("account.gameLocal");
+  }
+
+  return t("game.bot");
+}
+
+function getGameOpponentLabel(mode: string, t: (key: string) => string) {
+  if (mode === "room") {
+    return t("account.gameFriend");
+  }
+
+  if (mode === "local") {
+    return t("account.gameLocal");
+  }
+
+  return t("game.bot");
 }

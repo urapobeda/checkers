@@ -58,8 +58,8 @@ export function CoachReview() {
   const moves = useMemo(() => readMoves(game), [game]);
   const analysis = useMemo(() => buildAnalysis(game, moves, t), [game, moves, t]);
   const serialized = game ? serializeGameRecord(game) : null;
-  const savedGameMode = game?.mode === "local" ? t("account.gameLocal") : t("game.bot");
-  const savedOpponent = game?.bot_level ? t(`game.level.${game.bot_level}.title`) : t("account.gameLocal");
+  const savedGameMode = game ? getGameModeLabel(game.mode, t) : "";
+  const savedOpponent = game?.bot_level ? t(`game.level.${game.bot_level}.title`) : game ? getGameOpponentLabel(game.mode, t) : "";
   const savedWinner = game?.winner ? (game.winner === "light" ? t("game.white") : t("game.black")) : t("account.gameSaved");
   const savedGameLabel = game ? `${savedGameMode} / ${savedOpponent}` : t("coach.noGameLoaded");
 
@@ -216,4 +216,28 @@ function buildAnalysis(game: GameRecord | null, moves: MovePayload[], t: Transla
       },
     ],
   };
+}
+
+function getGameModeLabel(mode: string, t: Translate) {
+  if (mode === "room") {
+    return t("account.gameRoom");
+  }
+
+  if (mode === "local") {
+    return t("account.gameLocal");
+  }
+
+  return t("game.bot");
+}
+
+function getGameOpponentLabel(mode: string, t: Translate) {
+  if (mode === "room") {
+    return t("account.gameFriend");
+  }
+
+  if (mode === "local") {
+    return t("account.gameLocal");
+  }
+
+  return t("game.bot");
 }
